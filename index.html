@@ -77,7 +77,7 @@
 <body class="text-slate-800 min-h-screen flex flex-col">
 
     <!-- Header Section with Unsplash Background -->
-    <header class="relative bg-slate-900 text-white h-64 overflow-hidden shadow-md">
+    <header class="relative bg-slate-900 text-white h-56 md:h-64 overflow-hidden shadow-md">
         <!-- Unsplash Image: Finance/Architecture -->
         <img src="https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80" 
              alt="Stock Market Background" 
@@ -85,17 +85,17 @@
         
         <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
 
-        <div class="relative container mx-auto px-6 h-full flex flex-col justify-end pb-8">
+        <div class="relative container mx-auto px-4 md:px-6 h-full flex flex-col justify-end pb-6 md:pb-8">
             <div class="flex items-end justify-between flex-wrap gap-4">
                 <div>
                     <span class="bg-blue-600 text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide mb-2 inline-block shadow-sm">
                         Market Overview
                     </span>
-                    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white shadow-sm">
+                    <h1 class="text-2xl md:text-4xl font-bold tracking-tight text-white shadow-sm">
                         每日股市觀測站
                     </h1>
-                    <p class="text-slate-300 mt-2 text-sm md:text-base max-w-lg">
-                        即時追蹤精選個股動態，掌握最新成交資訊。資料來源：台灣證券交易所 API。
+                    <p class="text-slate-300 mt-2 text-xs md:text-base max-w-lg">
+                        即時追蹤精選個股動態，掌握最新成交資訊。
                     </p>
                 </div>
                 <div class="text-right hidden md:block">
@@ -110,28 +110,29 @@
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 -mt-8 relative z-10 mb-12 flex-grow">
+    <main class="container mx-auto px-4 -mt-6 md:-mt-8 relative z-10 mb-12 flex-grow">
         
         <!-- Dashboard Card -->
-        <div class="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden fade-in">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden fade-in min-h-[300px]">
             
             <!-- Toolbar / Filter Area -->
-            <div class="glass-header px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="glass-header px-4 md:px-6 py-4 flex justify-between items-center gap-4 sticky top-0 z-10">
                 <div class="flex items-center gap-3">
                     <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
                         <i class="fa-solid fa-chart-line"></i>
                     </div>
-                    <h2 class="text-lg font-bold text-slate-700">自選股行情表</h2>
+                    <h2 class="text-base md:text-lg font-bold text-slate-700">自選股行情</h2>
                 </div>
                 
-                <button onclick="refreshData()" id="refreshBtn" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:text-blue-600 transition-all text-sm font-medium shadow-sm active:scale-95">
+                <button onclick="refreshData()" id="refreshBtn" class="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:text-blue-600 transition-all text-xs md:text-sm font-medium shadow-sm active:scale-95">
                     <i class="fa-solid fa-rotate-right" id="refreshIcon"></i>
-                    <span>重新整理</span>
+                    <span class="hidden md:inline">重新整理</span>
+                    <span class="md:hidden">刷新</span>
                 </button>
             </div>
 
-            <!-- Table Container -->
-            <div class="overflow-x-auto custom-scrollbar">
+            <!-- Desktop Table View (Hidden on Mobile) -->
+            <div class="hidden md:block overflow-x-auto custom-scrollbar">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
@@ -151,10 +152,15 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Mobile Card View (Hidden on Desktop) -->
+            <div id="mobileCardsContainer" class="md:hidden divide-y divide-slate-100 bg-slate-50/50">
+                <!-- Javascript will populate cards here -->
+            </div>
             
             <!-- Loading State Overlay -->
-            <div id="loadingState" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center z-20">
-                <div class="flex flex-col items-center">
+            <div id="loadingState" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center z-20 backdrop-blur-sm">
+                <div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg border border-slate-100">
                     <div class="loader mb-3"></div>
                     <p class="text-slate-500 text-sm font-medium">資料更新中...</p>
                 </div>
@@ -169,20 +175,20 @@
                 <p class="text-slate-500 mt-2">請檢查網路連線或稍後再試。</p>
             </div>
 
-            <div class="bg-slate-50 px-6 py-3 border-t border-slate-200">
+            <div class="bg-slate-50 px-4 md:px-6 py-3 border-t border-slate-200">
                 <p class="text-xs text-slate-400 flex items-center gap-1">
                     <i class="fa-regular fa-clock"></i>
-                    最後更新時間：<span id="lastUpdatedTime">--</span>
+                    最後更新：<span id="lastUpdatedTime">--</span>
                 </p>
             </div>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 py-8 mt-auto">
+    <footer class="bg-white border-t border-slate-200 py-6 md:py-8 mt-auto">
         <div class="container mx-auto px-4 text-center">
             <p class="text-slate-500 text-sm">
-                &copy; 2025 Stock Dashboard UI. Designed for Financial Analysis.
+                &copy; 2025 Stock Dashboard UI.
             </p>
             <div class="mt-2 text-xs text-slate-400">
                 * 投資一定有風險，基金投資有賺有賠，申購前應詳閱公開說明書
@@ -196,6 +202,7 @@
         const apiBaseUrl = 'https://read-stock.zeabur.app/api/stock?stockNo=';
 
         const tableBody = document.getElementById('stockTableBody');
+        const mobileContainer = document.getElementById('mobileCardsContainer');
         const loadingState = document.getElementById('loadingState');
         const errorState = document.getElementById('errorState');
         const lastUpdatedTime = document.getElementById('lastUpdatedTime');
@@ -218,7 +225,8 @@
         async function fetchStockData() {
             showLoading(true);
             errorState.classList.add('hidden');
-            tableBody.innerHTML = ''; // 清空舊資料
+            tableBody.innerHTML = ''; // 清空 Desktop 舊資料
+            mobileContainer.innerHTML = ''; // 清空 Mobile 舊資料
 
             try {
                 // 使用 Promise.all 並行請求所有股票資料
@@ -235,8 +243,9 @@
                 results.forEach(result => {
                     if (result.error || !result.data.success) {
                         renderErrorRow(result.code);
+                        renderErrorCard(result.code);
                     } else {
-                        processAndRenderRow(result.code, result.data.data);
+                        processAndRender(result.code, result.data.data);
                     }
                 });
 
@@ -250,15 +259,11 @@
             }
         }
 
-        function processAndRenderRow(stockCode, apiData) {
+        function processAndRender(stockCode, apiData) {
             // 解析股票名稱
-            // API Title 格式範例: "114年12月 00662 富邦NASDAQ       各日成交資訊"
-            // 我們嘗試分割字串來取得中間的名稱
             let stockName = stockCode;
             try {
-                const titleParts = apiData.title.split(/\s+/); // 使用正規表達式分割空格
-                // titleParts 通常是 ["114年12月", "00662", "富邦NASDAQ", "各日成交資訊"]
-                // 我們找代碼後面的那個部分
+                const titleParts = apiData.title.split(/\s+/);
                 const codeIndex = titleParts.indexOf(stockCode);
                 if (codeIndex !== -1 && titleParts[codeIndex + 1]) {
                     stockName = titleParts[codeIndex + 1];
@@ -267,11 +272,11 @@
                 console.warn("Name parsing failed", e);
             }
 
-            // 取得最新一筆資料 (陣列最後一個)
-            // Data 格式: [日期, 成交股數, 成交金額, 開盤, 最高, 最低, 收盤, 漲跌, 筆數]
+            // 取得最新一筆資料
             const dailyData = apiData.data;
             if (!dailyData || dailyData.length === 0) {
                 renderErrorRow(stockCode, "無近期資料");
+                renderErrorCard(stockCode, "無近期資料");
                 return;
             }
 
@@ -279,25 +284,23 @@
             
             // 欄位對應
             const date = latest[0];
-            const volumeStr = latest[1]; // 成交股數
-            // const amount = latest[2];
+            const volumeStr = latest[1];
             const open = latest[3];
             const high = latest[4];
             const low = latest[5];
             const close = latest[6];
-            const changeStr = latest[7]; // "+0.65" or "-0.50"
+            const changeStr = latest[7];
 
             // 處理數值計算與顏色
             const changeVal = parseFloat(changeStr.replace(/,/g, ''));
             const closeVal = parseFloat(close.replace(/,/g, ''));
-            const prevClose = closeVal - changeVal; // 推算昨日收盤價以計算百分比
+            const prevClose = closeVal - changeVal;
             
             let colorClass = "text-slate-800";
             let icon = "";
             let bgClass = "";
             let percentStr = "0.00%";
 
-            // 台灣股市：紅漲綠跌
             if (changeVal > 0) {
                 colorClass = "text-red-600";
                 bgClass = "bg-red-50";
@@ -309,18 +312,18 @@
                 icon = '<i class="fa-solid fa-caret-down mr-1"></i>';
                 percentStr = ((changeVal / prevClose) * 100).toFixed(2) + '%';
             } else {
-                colorClass = "text-slate-500"; // 平盤
+                colorClass = "text-slate-500";
                 icon = '<i class="fa-solid fa-minus mr-1 text-xs"></i>';
                 percentStr = "0.00%";
             }
 
-            // 計算成交量 (轉為張數 = 股數 / 1000)
+            // 成交量換算
             const volumeInt = parseInt(volumeStr.replace(/,/g, ''), 10);
             const volumeSheets = Math.floor(volumeInt / 1000).toLocaleString();
 
+            // 1. 渲染 Desktop Table Row
             const tr = document.createElement('tr');
             tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100 group";
-            
             tr.innerHTML = `
                 <td class="px-6 py-4">
                     <div class="flex items-center">
@@ -348,8 +351,50 @@
                 <td class="px-6 py-4 text-right text-slate-600">${low}</td>
                 <td class="px-6 py-4 text-right text-slate-600 font-mono">${volumeSheets}</td>
             `;
-            
             tableBody.appendChild(tr);
+
+            // 2. 渲染 Mobile Card
+            const card = document.createElement('div');
+            card.className = "bg-white p-4 pb-5 border-b border-slate-100 last:border-0";
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs mr-3 shadow-sm">
+                            ${stockCode}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 leading-tight">${stockName}</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">${date}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-bold text-slate-800 leading-none mb-1">${close}</div>
+                        <div class="text-xs font-bold ${colorClass} flex items-center justify-end">
+                            ${icon} ${changeStr} (${percentStr})
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-4 gap-2 text-center bg-slate-50 rounded-lg p-2.5">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wide">開盤</span>
+                        <span class="font-semibold text-slate-700 text-sm">${open}</span>
+                    </div>
+                    <div class="flex flex-col border-l border-slate-200">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wide">最高</span>
+                        <span class="font-semibold text-red-600/80 text-sm">${high}</span>
+                    </div>
+                    <div class="flex flex-col border-l border-slate-200">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wide">最低</span>
+                        <span class="font-semibold text-green-600/80 text-sm">${low}</span>
+                    </div>
+                    <div class="flex flex-col border-l border-slate-200">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wide">成交量</span>
+                        <span class="font-semibold text-slate-700 text-sm">${volumeSheets}</span>
+                    </div>
+                </div>
+            `;
+            mobileContainer.appendChild(card);
         }
 
         function renderErrorRow(code, msg = "讀取失敗") {
@@ -369,6 +414,25 @@
                 </td>
             `;
             tableBody.appendChild(tr);
+        }
+
+        function renderErrorCard(code, msg = "讀取失敗") {
+            const card = document.createElement('div');
+            card.className = "bg-red-50/30 p-4 border-b border-red-100";
+            card.innerHTML = `
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs mr-3">
+                        ${code}
+                    </div>
+                    <div>
+                        <div class="font-bold text-slate-400 mb-1">無法取得名稱</div>
+                        <div class="text-xs text-red-400 flex items-center">
+                            <i class="fa-solid fa-circle-exclamation mr-1.5"></i> ${msg}
+                        </div>
+                    </div>
+                </div>
+            `;
+            mobileContainer.appendChild(card);
         }
 
         function showLoading(isLoading) {
