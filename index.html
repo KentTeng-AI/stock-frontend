@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股市觀測儀表板 | Professional Stock Dashboard</title>
     
+    <!-- FAVICON-S -->
+    <link rel="icon" href="./icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="./icon.png">
+    <link rel="apple-touch-icon" sizes="500x500" href="./icon.png">
+    <!-- FAVICON-E -->
+
     <!-- Google Fonts: 使用 Noto Sans TC 確保繁體中文顯示美觀 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -116,18 +122,31 @@
         <div class="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden fade-in min-h-[300px]">
             
             <!-- Toolbar / Filter Area -->
-            <div class="glass-header px-4 md:px-6 py-4 flex justify-between items-center gap-4 sticky top-0 z-10">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                        <i class="fa-solid fa-chart-line"></i>
+            <div class="glass-header px-4 md:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-0 z-10">
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    <div class="flex items-center gap-2 mb-2 sm:mb-0">
+                        <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                        <h2 class="text-base md:text-lg font-bold text-slate-700 whitespace-nowrap">自選股行情</h2>
                     </div>
-                    <h2 class="text-base md:text-lg font-bold text-slate-700">自選股行情</h2>
+                    
+                    <!-- Search Box -->
+                    <div class="relative w-full sm:w-auto flex items-center group">
+                        <input type="text" id="stockInput" 
+                               placeholder="查詢代號 (如: 2330)" 
+                               class="pl-9 pr-20 py-2 w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400 text-slate-700"
+                               onkeypress="handleKeyPress(event)">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 text-slate-400 text-xs"></i>
+                        <button onclick="searchStock()" class="absolute right-1 top-1 bottom-1 px-3 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors shadow-sm">
+                            查詢
+                        </button>
+                    </div>
                 </div>
                 
-                <button onclick="refreshData()" id="refreshBtn" class="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:text-blue-600 transition-all text-xs md:text-sm font-medium shadow-sm active:scale-95">
+                <button onclick="refreshData()" id="refreshBtn" class="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:text-blue-600 transition-all text-xs md:text-sm font-medium shadow-sm active:scale-95 w-full md:w-auto">
                     <i class="fa-solid fa-rotate-right" id="refreshIcon"></i>
-                    <span class="hidden md:inline">重新整理</span>
-                    <span class="md:hidden">刷新</span>
+                    <span class="inline">重整 / 顯示全部</span>
                 </button>
             </div>
 
@@ -175,10 +194,13 @@
                 <p class="text-slate-500 mt-2">請檢查網路連線或稍後再試。</p>
             </div>
 
-            <div class="bg-slate-50 px-4 md:px-6 py-3 border-t border-slate-200">
+            <div class="bg-slate-50 px-4 md:px-6 py-3 border-t border-slate-200 flex justify-between items-center flex-wrap gap-2">
                 <p class="text-xs text-slate-400 flex items-center gap-1">
                     <i class="fa-regular fa-clock"></i>
                     最後更新：<span id="lastUpdatedTime">--</span>
+                </p>
+                <p class="text-xs text-slate-400" id="stockCountInfo">
+                    --
                 </p>
             </div>
         </div>
@@ -197,8 +219,8 @@
     </footer>
 
     <script>
-        // 設定目標股票代碼
-        const targetStocks = ['00662', '00670L', '00865B', '00712', '2542'];
+        // 設定預設股票代碼
+        const defaultStocks = ['00662', '00670L', '00865B', '00712', '2542'];
         const apiBaseUrl = 'https://read-stock.zeabur.app/api/stock?stockNo=';
 
         const tableBody = document.getElementById('stockTableBody');
@@ -207,12 +229,63 @@
         const errorState = document.getElementById('errorState');
         const lastUpdatedTime = document.getElementById('lastUpdatedTime');
         const refreshIcon = document.getElementById('refreshIcon');
+        const stockInput = document.getElementById('stockInput');
+        const stockCountInfo = document.getElementById('stockCountInfo');
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             fetchStockData();
         });
 
+        // 處理按下 Enter 鍵
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                searchStock();
+            }
+        }
+
+        // 單一股票查詢功能
+        async function searchStock() {
+            const code = stockInput.value.trim().toUpperCase();
+            
+            if (!code) {
+                alert("請輸入股票代號");
+                return;
+            }
+
+            showLoading(true);
+            
+            try {
+                // 單獨請求該檔股票
+                const response = await fetch(`${apiBaseUrl}${code}`);
+                const json = await response.json();
+
+                // 檢查是否成功 (success: true 且 data 存在)
+                if (json.success && json.data) {
+                    // 1. 清空目前的畫面
+                    tableBody.innerHTML = ''; 
+                    mobileContainer.innerHTML = '';
+                    errorState.classList.add('hidden');
+
+                    // 2. 顯示查詢結果
+                    processAndRender(code, json.data);
+                    
+                    // 3. 更新狀態列
+                    stockCountInfo.textContent = `搜尋結果: ${code}`;
+                    stockInput.value = ''; // 清空輸入框
+                } else {
+                    // 查詢失敗提示
+                    alert(`查無代號「${code}」的資料，請確認代號是否正確。`);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("查詢發生錯誤，請稍後再試。");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 重新整理 (載入預設列表)
         function refreshData() {
             refreshIcon.classList.add('fa-spin');
             fetchStockData().finally(() => {
@@ -222,15 +295,19 @@
             });
         }
 
+        // 載入預設股票清單
         async function fetchStockData() {
             showLoading(true);
             errorState.classList.add('hidden');
             tableBody.innerHTML = ''; // 清空 Desktop 舊資料
             mobileContainer.innerHTML = ''; // 清空 Mobile 舊資料
+            
+            // 更新底部計數
+            stockCountInfo.textContent = `顯示預設 ${defaultStocks.length} 檔股票`;
 
             try {
-                // 使用 Promise.all 並行請求所有股票資料
-                const promises = targetStocks.map(code => 
+                // 使用 Promise.all 並行請求所有預設股票資料
+                const promises = defaultStocks.map(code => 
                     fetch(`${apiBaseUrl}${code}`)
                         .then(response => response.json())
                         .then(json => ({ code, data: json }))
@@ -242,8 +319,8 @@
                 // 處理並顯示資料
                 results.forEach(result => {
                     if (result.error || !result.data.success) {
-                        renderErrorRow(result.code);
-                        renderErrorCard(result.code);
+                        renderErrorRow(result.code, "無資料");
+                        renderErrorCard(result.code, "無資料");
                     } else {
                         processAndRender(result.code, result.data.data);
                     }
