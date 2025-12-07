@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股市觀測儀表板 | Professional Stock Dashboard</title>
+    
+    <!-- Google Fonts: 使用 Noto Sans TC 確保繁體中文顯示美觀 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS: 快速構建現代化 UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome: 圖標庫 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f3f4f6; /* 柔和的淺灰背景 */
+        }
+        
+        /* 自定義捲軸樣式，讓表格滾動更優雅 */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* 玻璃擬態效果 (Glassmorphism) 用於 Header */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* 載入動畫 */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 24px;
+            height: 24px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 淡入動畫 */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header Section with Unsplash Background -->
+    <header class="relative bg-slate-900 text-white h-64 overflow-hidden shadow-md">
+        <!-- Unsplash Image: Finance/Architecture -->
+        <img src="https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80" 
+             alt="Stock Market Background" 
+             class="absolute inset-0 w-full h-full object-cover opacity-60">
+        
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+
+        <div class="relative container mx-auto px-6 h-full flex flex-col justify-end pb-8">
+            <div class="flex items-end justify-between flex-wrap gap-4">
+                <div>
+                    <span class="bg-blue-600 text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide mb-2 inline-block shadow-sm">
+                        Market Overview
+                    </span>
+                    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white shadow-sm">
+                        每日股市觀測站
+                    </h1>
+                    <p class="text-slate-300 mt-2 text-sm md:text-base max-w-lg">
+                        即時追蹤精選個股動態，掌握最新成交資訊。資料來源：台灣證券交易所 API。
+                    </p>
+                </div>
+                <div class="text-right hidden md:block">
+                    <p class="text-sm text-slate-400">目前狀態</p>
+                    <div class="flex items-center gap-2 text-emerald-400 font-medium">
+                        <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                        系統運作正常
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 -mt-8 relative z-10 mb-12 flex-grow">
+        
+        <!-- Dashboard Card -->
+        <div class="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden fade-in">
+            
+            <!-- Toolbar / Filter Area -->
+            <div class="glass-header px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <h2 class="text-lg font-bold text-slate-700">自選股行情表</h2>
+                </div>
+                
+                <button onclick="refreshData()" id="refreshBtn" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:text-blue-600 transition-all text-sm font-medium shadow-sm active:scale-95">
+                    <i class="fa-solid fa-rotate-right" id="refreshIcon"></i>
+                    <span>重新整理</span>
+                </button>
+            </div>
+
+            <!-- Table Container -->
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+                            <th class="px-6 py-4 font-semibold">代號 / 名稱</th>
+                            <th class="px-6 py-4 font-semibold text-right">交易日期</th>
+                            <th class="px-6 py-4 font-semibold text-right">成交價</th>
+                            <th class="px-6 py-4 font-semibold text-right">漲跌</th>
+                            <th class="px-6 py-4 font-semibold text-right">漲跌幅(%)</th>
+                            <th class="px-6 py-4 font-semibold text-right">開盤</th>
+                            <th class="px-6 py-4 font-semibold text-right">最高</th>
+                            <th class="px-6 py-4 font-semibold text-right">最低</th>
+                            <th class="px-6 py-4 font-semibold text-right">成交量(張)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockTableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- Javascript will populate rows here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Loading State Overlay -->
+            <div id="loadingState" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center z-20">
+                <div class="flex flex-col items-center">
+                    <div class="loader mb-3"></div>
+                    <p class="text-slate-500 text-sm font-medium">資料更新中...</p>
+                </div>
+            </div>
+
+            <!-- Empty/Error State -->
+            <div id="errorState" class="hidden p-12 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
+                    <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">無法取得資料</h3>
+                <p class="text-slate-500 mt-2">請檢查網路連線或稍後再試。</p>
+            </div>
+
+            <div class="bg-slate-50 px-6 py-3 border-t border-slate-200">
+                <p class="text-xs text-slate-400 flex items-center gap-1">
+                    <i class="fa-regular fa-clock"></i>
+                    最後更新時間：<span id="lastUpdatedTime">--</span>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-8 mt-auto">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-slate-500 text-sm">
+                &copy; 2025 Stock Dashboard UI. Designed for Financial Analysis.
+            </p>
+            <div class="mt-2 text-xs text-slate-400">
+                * 投資一定有風險，基金投資有賺有賠，申購前應詳閱公開說明書
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 設定目標股票代碼
+        const targetStocks = ['00662', '00670L', '00865B', '00712', '2542'];
+        const apiBaseUrl = 'https://read-stock.zeabur.app/api/stock?stockNo=';
+
+        const tableBody = document.getElementById('stockTableBody');
+        const loadingState = document.getElementById('loadingState');
+        const errorState = document.getElementById('errorState');
+        const lastUpdatedTime = document.getElementById('lastUpdatedTime');
+        const refreshIcon = document.getElementById('refreshIcon');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchStockData();
+        });
+
+        function refreshData() {
+            refreshIcon.classList.add('fa-spin');
+            fetchStockData().finally(() => {
+                setTimeout(() => {
+                    refreshIcon.classList.remove('fa-spin');
+                }, 500);
+            });
+        }
+
+        async function fetchStockData() {
+            showLoading(true);
+            errorState.classList.add('hidden');
+            tableBody.innerHTML = ''; // 清空舊資料
+
+            try {
+                // 使用 Promise.all 並行請求所有股票資料
+                const promises = targetStocks.map(code => 
+                    fetch(`${apiBaseUrl}${code}`)
+                        .then(response => response.json())
+                        .then(json => ({ code, data: json }))
+                        .catch(err => ({ code, error: true }))
+                );
+
+                const results = await Promise.all(promises);
+                
+                // 處理並顯示資料
+                results.forEach(result => {
+                    if (result.error || !result.data.success) {
+                        renderErrorRow(result.code);
+                    } else {
+                        processAndRenderRow(result.code, result.data.data);
+                    }
+                });
+
+                updateTime();
+
+            } catch (error) {
+                console.error('Global Error:', error);
+                errorState.classList.remove('hidden');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function processAndRenderRow(stockCode, apiData) {
+            // 解析股票名稱
+            // API Title 格式範例: "114年12月 00662 富邦NASDAQ       各日成交資訊"
+            // 我們嘗試分割字串來取得中間的名稱
+            let stockName = stockCode;
+            try {
+                const titleParts = apiData.title.split(/\s+/); // 使用正規表達式分割空格
+                // titleParts 通常是 ["114年12月", "00662", "富邦NASDAQ", "各日成交資訊"]
+                // 我們找代碼後面的那個部分
+                const codeIndex = titleParts.indexOf(stockCode);
+                if (codeIndex !== -1 && titleParts[codeIndex + 1]) {
+                    stockName = titleParts[codeIndex + 1];
+                }
+            } catch (e) {
+                console.warn("Name parsing failed", e);
+            }
+
+            // 取得最新一筆資料 (陣列最後一個)
+            // Data 格式: [日期, 成交股數, 成交金額, 開盤, 最高, 最低, 收盤, 漲跌, 筆數]
+            const dailyData = apiData.data;
+            if (!dailyData || dailyData.length === 0) {
+                renderErrorRow(stockCode, "無近期資料");
+                return;
+            }
+
+            const latest = dailyData[dailyData.length - 1];
+            
+            // 欄位對應
+            const date = latest[0];
+            const volumeStr = latest[1]; // 成交股數
+            // const amount = latest[2];
+            const open = latest[3];
+            const high = latest[4];
+            const low = latest[5];
+            const close = latest[6];
+            const changeStr = latest[7]; // "+0.65" or "-0.50"
+
+            // 處理數值計算與顏色
+            const changeVal = parseFloat(changeStr.replace(/,/g, ''));
+            const closeVal = parseFloat(close.replace(/,/g, ''));
+            const prevClose = closeVal - changeVal; // 推算昨日收盤價以計算百分比
+            
+            let colorClass = "text-slate-800";
+            let icon = "";
+            let bgClass = "";
+            let percentStr = "0.00%";
+
+            // 台灣股市：紅漲綠跌
+            if (changeVal > 0) {
+                colorClass = "text-red-600";
+                bgClass = "bg-red-50";
+                icon = '<i class="fa-solid fa-caret-up mr-1"></i>';
+                percentStr = ((changeVal / prevClose) * 100).toFixed(2) + '%';
+            } else if (changeVal < 0) {
+                colorClass = "text-green-600";
+                bgClass = "bg-green-50";
+                icon = '<i class="fa-solid fa-caret-down mr-1"></i>';
+                percentStr = ((changeVal / prevClose) * 100).toFixed(2) + '%';
+            } else {
+                colorClass = "text-slate-500"; // 平盤
+                icon = '<i class="fa-solid fa-minus mr-1 text-xs"></i>';
+                percentStr = "0.00%";
+            }
+
+            // 計算成交量 (轉為張數 = 股數 / 1000)
+            const volumeInt = parseInt(volumeStr.replace(/,/g, ''), 10);
+            const volumeSheets = Math.floor(volumeInt / 1000).toLocaleString();
+
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100 group";
+            
+            tr.innerHTML = `
+                <td class="px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs mr-3 shadow-sm">
+                            ${stockCode}
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-700">${stockName}</div>
+                            <div class="text-xs text-slate-400 hidden sm:block">Stock Code</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 text-right font-medium text-slate-600 whitespace-nowrap">${date}</td>
+                <td class="px-6 py-4 text-right font-bold text-slate-800 text-base">${close}</td>
+                <td class="px-6 py-4 text-right font-bold ${colorClass}">
+                    ${icon}${changeStr}
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <span class="inline-block px-2 py-1 rounded text-xs font-bold ${colorClass} ${bgClass}">
+                        ${percentStr}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-right text-slate-600">${open}</td>
+                <td class="px-6 py-4 text-right text-slate-600">${high}</td>
+                <td class="px-6 py-4 text-right text-slate-600">${low}</td>
+                <td class="px-6 py-4 text-right text-slate-600 font-mono">${volumeSheets}</td>
+            `;
+            
+            tableBody.appendChild(tr);
+        }
+
+        function renderErrorRow(code, msg = "讀取失敗") {
+            const tr = document.createElement('tr');
+            tr.className = "bg-red-50/50 border-b border-red-100";
+            tr.innerHTML = `
+                <td class="px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs mr-3">
+                            ${code}
+                        </div>
+                        <div class="font-bold text-slate-400">無法取得名稱</div>
+                    </div>
+                </td>
+                <td colspan="8" class="px-6 py-4 text-center text-red-400 text-sm">
+                    <i class="fa-solid fa-circle-exclamation mr-2"></i> ${msg}
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        }
+
+        function showLoading(isLoading) {
+            if (isLoading) {
+                loadingState.classList.remove('hidden');
+            } else {
+                loadingState.classList.add('hidden');
+            }
+        }
+
+        function updateTime() {
+            const now = new Date();
+            lastUpdatedTime.textContent = now.toLocaleString('zh-TW', { 
+                hour12: false, 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+        }
+    </script>
+</body>
+</html>
